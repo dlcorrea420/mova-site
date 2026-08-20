@@ -1090,8 +1090,8 @@
   ['langPtBtn','langPtBtnMobile'].forEach(id => { const b = document.getElementById(id); if(b) b.addEventListener('click', () => applyLanguage('pt')); });
   ['langEnBtn','langEnBtnMobile'].forEach(id => { const b = document.getElementById(id); if(b) b.addEventListener('click', () => applyLanguage('en')); });
 
-  let savedLang = 'pt';
-  try{ savedLang = localStorage.getItem('mova-lang') || 'pt'; }catch(e){}
+  let savedLang = 'en';
+  try{ savedLang = localStorage.getItem('mova-lang') || 'en'; }catch(e){}
   applyLanguage(savedLang);
 
   document.getElementById('year').textContent = new Date().getFullYear();
