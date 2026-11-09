@@ -68,6 +68,24 @@
   .cabeca .atualizado{color:var(--muted);font-size:.82rem;display:flex;align-items:center;gap:8px}
   .ponto{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
 
+  /* PRAZOS — o que é time sensitive vem primeiro e com cara de aviso */
+  .prazos{margin:18px 0 6px}
+  .prazos h2{font-size:.95rem;text-transform:uppercase;letter-spacing:.03em;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+  .prazos h2 .conta{font-family:'Lato',sans-serif;font-weight:700;text-transform:none;letter-spacing:0;font-size:.78rem;background:var(--black);color:var(--yellow);border-radius:999px;padding:2px 10px}
+  /* O cartão do prazo fala a língua dos indicadores: número grande, rótulo, uma linha cinza. */
+  .prazos .fila{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .prazo{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;cursor:pointer;position:relative;overflow:hidden;min-width:0;transition:border-color .15s,transform .15s}
+  .prazo:hover{transform:translateY(-1px);border-color:var(--gray-300)}
+  .prazo::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--cor,var(--gray-300))}
+  .prazo .v{font-family:'Raleway',sans-serif;font-weight:800;font-size:2rem;line-height:1;color:var(--cor,var(--ink))}
+  .prazo .v small{font-size:.9rem;font-weight:700;margin-left:4px}
+  .prazo .r{font-size:.82rem;color:var(--ink-2);margin-top:6px;font-weight:700}
+  .prazo .s{font-size:.74rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .prazo .topo{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .prazo .refs{font-size:.76rem;font-weight:900;color:var(--ink);white-space:nowrap;padding-top:2px}
+  .prazos .fila.no-detalhe,.d-corpo .fila{grid-template-columns:1fr;display:grid;gap:10px}
+  @media (max-width: 860px){ .prazos .fila{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width: 560px){ .prazos .fila{grid-template-columns:1fr} }
   .indicadores{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}
   .ind{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;text-align:left;cursor:pointer;transition:border-color .15s, transform .15s;position:relative;overflow:hidden}
   .ind:hover{transform:translateY(-1px);border-color:var(--gray-300)}
@@ -220,14 +238,13 @@
 
 <main id="entrada" class="entrada">
   <form class="cartao" id="form" autocomplete="off">
-    <span class="tag">Acompanhamento de embarques</span>
-    <h1>Seus embarques, em tempo real</h1>
-    <p>Digite o código de acesso que a Mova enviou para a sua empresa. Ele abre só os seus processos.</p>
+    <span class="tag">Mova Logistics</span>
+    <h1>Área do cliente</h1>
     <label class="rot" for="codigo">Código de acesso</label>
     <input class="campo" id="codigo" name="codigo" required spellcheck="false" autocapitalize="characters" placeholder="XXXX-XXXX-XXXX-XXXX">
     <button class="primario" id="entrar" type="submit">Entrar</button>
     <div class="erro" id="erro" role="alert"></div>
-    <div class="miuda">Os dados chegam cifrados e são abertos só no seu navegador, com o seu código. Perdeu o código? Fale com a Mova: contato@movalog.com.br · +55 (47) 3515-7293</div>
+    <div class="miuda">contato@movalog.com.br · +55 (47) 3515-7293</div>
   </form>
 </main>
 
@@ -237,6 +254,7 @@
       <div><span class="tag">Área do cliente</span><h1 id="cliente"></h1></div>
       <div class="atualizado"><span class="ponto" aria-hidden="true"></span><span id="atualizado"></span></div>
     </div>
+    <section class="prazos" id="prazos" hidden></section>
     <div class="indicadores" id="indicadores"></div>
     <section class="bloco" aria-labelledby="t-emb">
       <h2 id="t-emb">Embarques <small id="contagem"></small></h2>
@@ -455,10 +473,12 @@
           <div class="trilho"><b style="width:${pr}%"></b>${paradas}${p.etapa >= 2 ? `<span class="navio" style="left:${pr}%">${p.modal === 'AIR' ? AVIAO : NAVIO}</span>` : ''}</div>
           <div class="frase">${frase}</div>
         </div>
+        ${(p.prazos ?? []).filter((z) => z.quando).length ? `<h3>Prazos</h3><div class="fila no-detalhe">${p.prazos.filter((z) => z.quando).map((z) => cartaoDoPrazo(z, p, false)).join('')}</div>` : ''}
         <h3>Dados do embarque</h3>
         <div class="ficha">
           ${f(p.modal === 'AIR' ? 'Voo' : 'Navio / viagem', p.navio ? esc(p.navio) + (p.viagem ? ' · ' + esc(p.viagem) : '') : 'a confirmar')}
           ${f('Armador', esc(p.armador ?? ''))}
+          ${f('Shipper', esc(p.shipper ?? ''), true)}
           ${f('Carga', esc(cargaTxt(p)))}
           ${f('Incoterm', esc(p.incoterm ?? ''))}
           ${f('HBL', esc(p.hbl ?? ''))}
@@ -480,7 +500,57 @@
     setTimeout(() => { el.hidden = true; }, 250);
   }
 
-  function desenhar() { indicadores(); lista(); ofertas(); }
+  /* ---------------------------------------------------------- prazos */
+  const horas = (iso) => (Date.parse(iso) - Date.now()) / 36e5;
+  function faltam(iso) {
+    const h = horas(iso);
+    if (h < 0) {
+      const d = Math.floor(-h / 24);
+      return { n: d >= 1 ? d : Math.floor(-h), u: d >= 1 ? (d === 1 ? 'dia atrás' : 'dias atrás') : 'h atrás', cor: '#b42318', venceu: true };
+    }
+    if (h < 48) return { n: Math.max(1, Math.round(h)), u: 'horas', cor: '#b42318', venceu: false };
+    const d = Math.round(h / 24);
+    return { n: d, u: 'dias', cor: d <= 5 ? 'var(--warn)' : 'var(--info)', venceu: false };
+  }
+  /*
+   * UM CARTÃO SÓ, na gramática dos indicadores: o número grande (quanto falta), o título
+   * curto e, embaixo, linhas cinzas de uma linha cada — nunca um parágrafo.
+   */
+  function cartaoDoPrazo(z, p, clicavel) {
+    const f = faltam(z.quando);
+    const doCliente = z.decide === 'CLIENTE';
+    const cor = doCliente ? f.cor : 'var(--gray-300)';
+    const rotulo = z.tipo === 'NUMERARIO' ? 'Vence' : 'Prazo';
+    /* A referência do cliente e o IM da MOVA, lado a lado e em negrito: é por elas que ele procura. */
+    const refs = [p.suaReferencia, p.referencia].filter(Boolean).map(esc).join(' · ');
+    const linha2 = [`${rotulo} ${horaSP(z.quando)}`, z.enviado ? `enviado ${dm(z.enviado.slice(0, 10))}` : null].filter(Boolean).join(' · ');
+    return `<div class="prazo" ${clicavel ? `data-i="${E.processos.indexOf(p)}"` : ''} style="--cor:${cor};${clicavel ? '' : 'cursor:default'}">
+      <div class="topo"><div class="v num">${f.n}<small>${f.u}</small></div><b class="refs">${refs}</b></div>
+      <div class="r">${esc(z.titulo)}</div>
+      ${z.detalhe ? `<div class="s">${esc(z.detalhe)}</div>` : ''}
+      ${p.shipper ? `<div class="s">${esc(p.shipper)}</div>` : ''}
+      <div class="s">${linha2}</div>
+    </div>`;
+  }
+
+  function listaDePrazos() {
+    const fora = [];
+    for (const p of E.processos) {
+      if (encerrado(p)) continue;
+      for (const z of p.prazos ?? []) fora.push({ ...z, p });
+    }
+    /* Sem data não é prazo: é condição (free time). Fica no detalhe do processo, não aqui. */
+    return fora.filter((z) => z.quando).sort((a, b) => a.quando.localeCompare(b.quando));
+  }
+  function prazos() {
+    const zs = listaDePrazos();
+    const el = $('#prazos');
+    el.hidden = zs.length === 0;
+    if (!zs.length) return;
+    el.innerHTML = `<h2>Prazos</h2><div class="fila">` + zs.map((z) => cartaoDoPrazo(z, z.p, true)).join('') + '</div>';
+  }
+
+  function desenhar() { prazos(); indicadores(); lista(); ofertas(); }
 
   /* ---------------------------------------------------------- eventos */
   $('#form').addEventListener('submit', async (ev) => {
