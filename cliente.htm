@@ -114,6 +114,9 @@
   .lista tbody tr:focus-visible{outline:2px solid var(--yellow);outline-offset:-2px}
   .ref{font-weight:900;white-space:nowrap}
   .sub{color:var(--muted);font-size:.8rem}
+  /* As partes na tabela: nome curto, tom discreto — identificam sem competir com a rota. */
+  .partes{font-size:.82rem;line-height:1.35;max-width:14rem}
+  .partes .sub{font-size:.78rem}
   .rota{display:flex;align-items:center;gap:8px;font-weight:700;white-space:nowrap}
   .rota .seta{color:var(--yellow-ink)}
   .pais{font-family:'Michroma',sans-serif;font-size:.55rem;color:var(--muted);letter-spacing:.06em}
@@ -267,7 +270,7 @@
         <input class="busca" id="busca" type="search" placeholder="Buscar processo, referência, contêiner, navio" aria-label="Buscar">
       </div>
       <table class="lista">
-        <thead><tr><th>Processo</th><th>Rota</th><th>Carga</th><th>Navio / voo</th><th>Saída</th><th>Chegada</th><th>Etapa</th></tr></thead>
+        <thead><tr><th>Processo</th><th>Rota</th><th>Partes</th><th>Carga</th><th>Navio / voo</th><th>Saída</th><th>Chegada</th><th>Etapa</th></tr></thead>
         <tbody id="linhas"></tbody>
       </table>
       <div class="cartoes" id="cartoes"></div>
@@ -353,6 +356,16 @@
   const modalTxt = (p) => (p.modal === 'AIR' ? 'Aéreo' : p.carga === 'LCL' ? 'Marítimo LCL' : 'Marítimo FCL');
   const cargaTxt = (p) => (p.modal === 'AIR' ? 'Aéreo' : p.carga === 'LCL' ? 'LCL' : p.equipamentos.join(' + ') || 'FCL');
   const rotaHtml = (p) => `<span class="rota">${esc(p.origem?.nome ?? 'Origem a confirmar')} <span class="pais">${esc(p.origem?.pais ?? '')}</span><span class="seta">→</span>${esc(p.destino?.nome ?? '—')} <span class="pais">${esc(p.destino?.pais ?? '')}</span></span>`;
+  /*
+   * AS PARTES, DISCRETAS (Daniel, 10/11/2026): quem embarcou em cima, quem
+   * recebe embaixo, em nome curto — no grupo nem sempre é a mesma empresa, e é
+   * esse par que diz de que embarque se fala. Sem rótulo na tabela: a coluna
+   * já se chama Partes, e a seta diz a direção.
+   */
+  const partesHtml = (p) =>
+    p.shipper || p.consignatario
+      ? `<div class="partes">${p.shipper ? `<div>${esc(p.shipper)}</div>` : ''}${p.consignatario ? `<div class="sub">→ ${esc(p.consignatario)}</div>` : ''}</div>`
+      : '<span class="sub">—</span>';
   const saida = (p) => p.atd ?? p.etd, chegada = (p) => p.ata ?? p.eta;
   const dataHtml = (real, prev) => {
     const iso = real ?? prev;
@@ -398,6 +411,7 @@
       return `<tr tabindex="0" data-i="${E.processos.indexOf(p)}">
         <td><div class="ref">${esc(p.referencia)}</div><div class="sub">${esc(p.suaReferencia ?? '')}</div></td>
         <td>${rotaHtml(p)}<div class="sub">${esc(modalTxt(p))}${p.incoterm ? ' · ' + esc(p.incoterm) : ''}</div></td>
+        <td>${partesHtml(p)}</td>
         <td class="num" style="white-space:nowrap">${esc(cargaTxt(p))}</td>
         <td>${p.navio ? `<div>${esc(p.navio)}</div><div class="sub">${esc(p.viagem ?? '')}</div>` : '<span class="sub">a confirmar</span>'}</td>
         <td>${dataHtml(p.atd, p.etd)}</td>
@@ -412,6 +426,8 @@
         ${rotaHtml(p)}
         ${s.k === 'transito' || s.k === 'chegando' ? `<div class="viagem" style="width:100%"><b style="width:${pr}%"></b></div>` : reguaMini(p).replace('width:110px', '')}
         <div class="grade">
+          ${p.shipper ? `<div><span class="k">Shipper</span>${esc(p.shipper)}</div>` : ''}
+          ${p.consignatario ? `<div><span class="k">Consignatário</span>${esc(p.consignatario)}</div>` : ''}
           <div><span class="k">Carga</span>${esc(cargaTxt(p))}</div>
           <div><span class="k">Navio / voo</span>${esc(p.navio ?? 'a confirmar')}</div>
           <div><span class="k">Saída</span>${dataHtml(p.atd, p.etd)}</div>
@@ -479,6 +495,7 @@
           ${f(p.modal === 'AIR' ? 'Voo' : 'Navio / viagem', p.navio ? esc(p.navio) + (p.viagem ? ' · ' + esc(p.viagem) : '') : 'a confirmar')}
           ${f('Armador', esc(p.armador ?? ''))}
           ${f('Shipper', esc(p.shipper ?? ''), true)}
+          ${f('Consignatário', esc(p.consignatario ?? ''), true)}
           ${f('Carga', esc(cargaTxt(p)))}
           ${f('Incoterm', esc(p.incoterm ?? ''))}
           ${f('HBL', esc(p.hbl ?? ''))}
