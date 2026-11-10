@@ -336,7 +336,7 @@
   function situacao(p) {
     if (p.etapa >= 4) return { k: 'fim', t: 'Concluído' };
     if (p.etapa === 3 && antigo(p)) return { k: 'fim', t: 'Chegou' };
-    if (anteriorAoCorte(p)) return { k: 'fim', t: p.etapa === 3 ? 'Chegou' : 'Histórico' };
+    if (ehHistorico(p)) return { k: 'fim', t: 'Histórico' };
     if (p.etapa === 3) return { k: 'chegou', t: 'Chegou' };
     if (p.etapa === 2) return p.eta && dias(E.hoje, p.eta) <= 15 ? { k: 'chegando', t: 'Chegando' } : { k: 'transito', t: 'Em trânsito' };
     return { k: 'aguarda', t: p.etapa === 1 ? 'Booking confirmado' : 'Aguardando embarque' };
@@ -346,7 +346,17 @@
   /* A data do embarque: a saída (real ou prevista); sem ela, a abertura do processo. */
   const dataDoEmbarque = (p) => p.atd ?? p.etd ?? p.aberto ?? null;
   const anteriorAoCorte = (p) => !!E.corte && (dataDoEmbarque(p) ?? '0000') < E.corte;
-  const encerrado = (p) => p.etapa >= 4 || (p.etapa === 3 && antigo(p)) || anteriorAoCorte(p);
+  /*
+   * O CORTE DE DATA SÓ VALE PARA QUEM JÁ CHEGOU (Daniel, 10/11/2026: "tem um
+   * da Turin chegando dia 20 e não tô vendo essa merda").
+   *
+   * O corte existe para não encher "Em andamento" de histórico. Mas ele olhava
+   * a data de SAÍDA: o IM00367 saiu em 04/09, antes do corte de 01/10, e
+   * sumia da lista — navegando, com chegada marcada para 20/11. Embarque que
+   * ainda não chegou NUNCA é histórico, tenha saído quando tiver saído.
+   */
+  const ehHistorico = (p) => p.etapa >= 3 && anteriorAoCorte(p);
+  const encerrado = (p) => p.etapa >= 4 || (p.etapa === 3 && antigo(p)) || ehHistorico(p);
   const progresso = (p) => {
     if (p.etapa >= 3) return 100;
     if (p.etapa < 2 || !p.atd || !p.eta) return 0;
