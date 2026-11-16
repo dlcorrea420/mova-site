@@ -16,7 +16,17 @@
     --gray-900:#1c1c1c; --gray-700:#3d3d3d; --gray-500:#767676; --gray-300:#c9c9c6; --gray-200:#e4e4e2; --gray-100:#f4f4f3;
     --yellow:#FFC72C; --yellow-soft:#fff4d1; --yellow-ink:#946b00;
     --bg:#fff; --surface:#fff; --surface-2:var(--gray-100); --ink:var(--gray-900); --ink-2:var(--gray-700); --muted:var(--gray-500); --line:var(--gray-200);
-    --ok:#1f7a4d; --ok-soft:#e5f4ec; --warn:#a15c00; --warn-soft:#fff1dc; --info:#1d4f91; --info-soft:#e7eefa;
+    /*
+     * SÓ PRETO E AMARELO (Daniel, 16/11/2026: "esse esquema teu de cor aí que parece um
+     * circo... verde, amarelo, azul. Eu quero no tema da mova").
+     *
+     * Os nomes continuam `ok`, `warn` e `info` porque é assim que o resto da folha os
+     * chama — o que mudou é a tinta. O estado agora se lê pelo PESO, não pela cor:
+     * grafite para o que corre sozinho, AMARELO para o que pede atenção (chegando,
+     * prazo curto), preto para o que terminou. Vermelho fica só no `--danger`, que é
+     * alarme de verdade. O texto do estado continua escrito em todo lugar.
+     */
+    --ok:var(--gray-900); --ok-soft:var(--gray-100); --warn:var(--yellow-ink); --warn-soft:var(--yellow-soft); --info:var(--gray-700); --info-soft:var(--gray-100);
     --shadow:0 1px 2px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.06);
   }
   /* O TEMA: segue o aparelho até a pessoa escolher no botão do topo (Daniel, 11/11/2026). */
@@ -24,7 +34,7 @@
     :root:not([data-theme="light"]){
       --bg:#0d0d0d; --surface:#161616; --surface-2:#1e1e1e; --ink:#f2f2f0; --ink-2:#cfcfcb; --muted:#9a9a96; --line:#2c2c2a;
       --yellow-soft:#3a2f0b; --yellow-ink:#FFC72C;
-      --ok:#5fd39a; --ok-soft:#10301f; --warn:#ffb347; --warn-soft:#3a2508; --info:#8fb6ff; --info-soft:#132442;
+      --ok:#f2f2f0; --ok-soft:#1e1e1e; --warn:#FFC72C; --warn-soft:#3a2f0b; --info:#cfcfcb; --info-soft:#1e1e1e;
       --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
       color-scheme:dark;
     }
@@ -32,7 +42,7 @@
   :root[data-theme="dark"]{
     --bg:#0d0d0d; --surface:#161616; --surface-2:#1e1e1e; --ink:#f2f2f0; --ink-2:#cfcfcb; --muted:#9a9a96; --line:#2c2c2a;
     --yellow-soft:#3a2f0b; --yellow-ink:#FFC72C;
-    --ok:#5fd39a; --ok-soft:#10301f; --warn:#ffb347; --warn-soft:#3a2508; --info:#8fb6ff; --info-soft:#132442;
+    --ok:#f2f2f0; --ok-soft:#1e1e1e; --warn:#FFC72C; --warn-soft:#3a2f0b; --info:#cfcfcb; --info-soft:#1e1e1e;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
     color-scheme:dark;
   }
@@ -80,7 +90,7 @@
   .cabeca .tag{color:var(--yellow-ink);display:block;margin-bottom:8px}
   .cabeca h1{font-size:clamp(1.4rem,3vw,2rem)}
   .cabeca .atualizado{color:var(--muted);font-size:.82rem;display:flex;align-items:center;gap:8px}
-  .ponto{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+  .ponto{width:8px;height:8px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 3px var(--yellow-soft)}
 
   /* PRAZOS — o que é time sensitive vem primeiro e com cara de aviso */
   .prazos{margin:18px 0 6px}
@@ -505,7 +515,7 @@
       { k: 'aguarda', v: ativos.filter((p) => p.etapa < 2).length, r: 'Aguardando embarque', s: 'booking e saída', cor: 'var(--gray-500)' },
       { k: 'transito', v: conta('transito'), r: 'Em trânsito', s: 'navegando', cor: 'var(--info)' },
       { k: 'chegando', v: conta('chegando'), r: 'Chegando', s: 'em até 15 dias', cor: 'var(--yellow)' },
-      { k: 'chegou', v: conta('chegou'), r: 'Chegaram', s: 'no destino', cor: 'var(--ok)' },
+      { k: 'chegou', v: conta('chegou'), r: 'Chegaram', s: 'no destino', cor: 'var(--ink)' },
     ];
     $('#indicadores').innerHTML = itens.map((i) => `<button class="ind${i.v ? '' : ' zero'}" data-filtro="${i.k}" aria-pressed="${filtro === i.k}" style="--cor:${i.cor}"><div class="v num">${i.v}</div><div class="r">${i.r}</div><div class="s">${i.s}</div></button>`).join('');
   }
