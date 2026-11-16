@@ -192,6 +192,9 @@
   .trecho{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-top:18px}
   .trecho .porto{font-family:'Raleway',sans-serif;font-weight:800;font-size:1.05rem}
   .trecho .porto small{display:block;font-family:'Lato',sans-serif;font-weight:400;font-size:.75rem;color:rgba(255,255,255,.6)}
+  /* POL/POD e ETD/ETA nomeados no cabeçalho (Daniel, 16/11/2026: "é só nomear lá em cima"). */
+  .trecho .porto em{display:block;font-family:'Lato',sans-serif;font-style:normal;font-weight:700;font-size:.62rem;letter-spacing:.09em;color:rgba(255,255,255,.45)}
+  .trecho .porto small em{display:inline;margin-right:5px}
   .trecho .fim{text-align:right}
   .trecho svg{width:44px;height:20px;color:var(--yellow)}
   .d-corpo{overflow-y:auto;overflow-x:hidden;padding:22px;flex:1;min-width:0}
@@ -571,17 +574,13 @@
     else if (p.etapa === 2 && p.atd) frase = `Saiu em ${dmLongo(p.atd)} — chegada a confirmar.`;
     else if (p.etd) frase = `Saída prevista em ${dmLongo(p.etd)} (${relativo(p.etd)}).`;
     /*
-     * A FICHA COMECA PELO QUE O CLIENTE PROCURA (Daniel, 16/11/2026: "tá
-     * aparecendo primeiro o navio, armador, depois shipper. Dá uma organizada
-     * ali por coisa importante. Tipo, ETD, ETA também. Identificar ali, né?
-     * Pol e pod").
+     * ROTA E DATAS SÓ NO CABEÇALHO (Daniel, 16/11/2026: "lá em cima já tem [os
+     * portos], ETA e ETD. É só nomear lá em cima. E tira lá da tabela").
      *
-     * Ordem: POL, POD, ETD, ETA, depois navio e armador, depois os números do
-     * embarque, e por último quem embarcou e quem recebe. Data real sai limpa;
-     * previsão leva "prev.", a mesma convenção do resto da página.
+     * A ficha é das PARTES e dos números: exportador, consignatário e notify
+     * primeiro — é por aí que o cliente reconhece o embarque —, e depois o
+     * resto como já estava.
      */
-    const porto = (o) => (o?.nome ? esc(o.nome) + (o.pais ? ' <span class="pais">' + esc(o.pais) + '</span>' : '') : '');
-    const data = (real, prevista) => (real ? dm(real) : prevista ? dm(prevista) + ' prev.' : '');
     const f = (k, v, larga) => (v ? `<div class="${larga ? 'larga' : ''}"><span class="k">${k}</span><span class="v">${v}</span></div>` : '');
     const atrac = p.atracou ? dm(p.atracou) : p.atracacaoPrevista ? horaSP(p.atracacaoPrevista) + ' prev.' : null;
     const el = $('#detalhe');
@@ -591,9 +590,9 @@
         <h2 id="d-ref">${esc(p.referencia)}</h2>
         <div class="sub">${p.suaReferencia ? 'Sua referência ' + esc(p.suaReferencia) : ''}</div>
         <div class="trecho">
-          <div class="porto">${esc(p.origem?.nome ?? '—')}<small>${p.atd ? 'saiu ' + dm(p.atd) : p.etd ? 'saída ' + dm(p.etd) + ' prev.' : 'saída a confirmar'}</small></div>
+          <div class="porto"><em>POL</em>${esc(p.origem?.nome ?? '—')}<small><em>ETD</em>${p.atd ? dm(p.atd) : p.etd ? dm(p.etd) + ' prev.' : 'a confirmar'}</small></div>
           ${SETA}
-          <div class="porto fim">${esc(p.destino?.nome ?? '—')}<small>${p.ata ? 'chegou ' + dm(p.ata) : p.eta ? 'chegada ' + dm(p.eta) + ' prev.' : 'chegada a confirmar'}</small></div>
+          <div class="porto fim"><em>POD</em>${esc(p.destino?.nome ?? '—')}<small><em>ETA</em>${p.ata ? dm(p.ata) : p.eta ? dm(p.eta) + ' prev.' : 'a confirmar'}</small></div>
         </div>
       </div>
       <div class="d-corpo">
@@ -608,21 +607,18 @@
         ${(p.prazos ?? []).filter((z) => z.quando).length ? `<h3>Prazos</h3><div class="fila no-detalhe">${p.prazos.filter((z) => z.quando).map((z) => cartaoDoPrazo(z, p, false)).join('')}</div>` : ''}
         <h3>Dados do embarque</h3>
         <div class="ficha">
-          ${f('POL', porto(p.origem))}
-          ${f('POD', porto(p.destino))}
-          ${f('ETD', data(p.atd, p.etd))}
-          ${f('ETA', data(p.ata, p.eta))}
+          ${f('Exportador', esc(p.shipper ?? ''), true)}
+          ${f('Consignatário', esc(p.consignatario ?? ''), true)}
+          ${f('Notify', esc(p.notify ?? ''), true)}
           ${f(p.modal === 'AIR' ? 'Voo' : 'Navio / viagem', p.navio ? esc(p.navio) + (p.viagem ? ' · ' + esc(p.viagem) : '') : 'a confirmar')}
           ${f('Armador', esc(p.armador ?? ''))}
-          ${f('HBL', esc(p.hbl ?? ''))}
-          ${f('Contêineres', (p.conteineres || []).map(esc).join(' · '), true)}
           ${f('Carga', esc(cargaTxt(p)))}
           ${f('Incoterm', esc(p.incoterm ?? ''))}
+          ${f('HBL', esc(p.hbl ?? ''))}
           ${f('Free time', esc(p.freeTime ?? ''))}
           ${f('Terminal', esc(p.terminal ?? ''))}
           ${f('Atracação', atrac ? esc(atrac) : '')}
-          ${f('Shipper', esc(p.shipper ?? ''), true)}
-          ${f('Consignatário', esc(p.consignatario ?? ''), true)}
+          ${f('Contêineres', (p.conteineres || []).map(esc).join(' · '), true)}
         </div>
         ${p.pernas.length ? `<h3>Rota</h3><ol class="pernas">${p.pernas.map((l) => `<li class="${l.ata || l.atd ? 'ok' : ''}"><i></i><div class="t">${esc(l.de)} → ${esc(l.para)}</div><div class="m">${l.navio ? esc(l.navio) + (l.viagem ? ' ' + esc(l.viagem) : '') + ' · ' : ''}saída ${l.atd ? dm(l.atd) : l.etd ? dm(l.etd) + ' prev.' : '—'} · chegada ${l.ata ? dm(l.ata) : l.eta ? dm(l.eta) + ' prev.' : '—'}</div></li>`).join('')}</ol>` : ''}
       </div>`;
